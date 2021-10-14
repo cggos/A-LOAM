@@ -282,8 +282,7 @@ int main(int argc, char **argv)
 
                     //ceres::LossFunction *loss_function = NULL;
                     ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
-                    ceres::LocalParameterization *q_parameterization =
-                        new ceres::EigenQuaternionParameterization();
+                    ceres::LocalParameterization *q_parameterization = new ceres::EigenQuaternionParameterization();
                     ceres::Problem::Options problem_options;
 
                     ceres::Problem problem(problem_options);
@@ -308,6 +307,7 @@ int main(int argc, char **argv)
                             int closestPointScanID = int(laserCloudCornerLast->points[closestPointInd].intensity);
 
                             double minPointSqDis2 = DISTANCE_SQ_THRESHOLD;
+                            
                             // search in the direction of increasing scan line
                             for (int j = closestPointInd + 1; j < (int)laserCloudCornerLast->points.size(); ++j)
                             {
@@ -319,12 +319,9 @@ int main(int argc, char **argv)
                                 if (int(laserCloudCornerLast->points[j].intensity) > (closestPointScanID + NEARBY_SCAN))
                                     break;
 
-                                double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) *
-                                                        (laserCloudCornerLast->points[j].x - pointSel.x) +
-                                                    (laserCloudCornerLast->points[j].y - pointSel.y) *
-                                                        (laserCloudCornerLast->points[j].y - pointSel.y) +
-                                                    (laserCloudCornerLast->points[j].z - pointSel.z) *
-                                                        (laserCloudCornerLast->points[j].z - pointSel.z);
+                                double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * (laserCloudCornerLast->points[j].x - pointSel.x) +
+                                                    (laserCloudCornerLast->points[j].y - pointSel.y) * (laserCloudCornerLast->points[j].y - pointSel.y) +
+                                                    (laserCloudCornerLast->points[j].z - pointSel.z) * (laserCloudCornerLast->points[j].z - pointSel.z);
 
                                 if (pointSqDis < minPointSqDis2)
                                 {
@@ -345,12 +342,9 @@ int main(int argc, char **argv)
                                 if (int(laserCloudCornerLast->points[j].intensity) < (closestPointScanID - NEARBY_SCAN))
                                     break;
 
-                                double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) *
-                                                        (laserCloudCornerLast->points[j].x - pointSel.x) +
-                                                    (laserCloudCornerLast->points[j].y - pointSel.y) *
-                                                        (laserCloudCornerLast->points[j].y - pointSel.y) +
-                                                    (laserCloudCornerLast->points[j].z - pointSel.z) *
-                                                        (laserCloudCornerLast->points[j].z - pointSel.z);
+                                double pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * (laserCloudCornerLast->points[j].x - pointSel.x) +
+                                                    (laserCloudCornerLast->points[j].y - pointSel.y) * (laserCloudCornerLast->points[j].y - pointSel.y) +
+                                                    (laserCloudCornerLast->points[j].z - pointSel.z) * (laserCloudCornerLast->points[j].z - pointSel.z);
 
                                 if (pointSqDis < minPointSqDis2)
                                 {
@@ -362,9 +356,7 @@ int main(int argc, char **argv)
                         }
                         if (minPointInd2 >= 0) // both closestPointInd and minPointInd2 is valid
                         {
-                            Eigen::Vector3d curr_point(cornerPointsSharp->points[i].x,
-                                                       cornerPointsSharp->points[i].y,
-                                                       cornerPointsSharp->points[i].z);
+                            Eigen::Vector3d curr_point(cornerPointsSharp->points[i].x, cornerPointsSharp->points[i].y, cornerPointsSharp->points[i].z);
                             Eigen::Vector3d last_point_a(laserCloudCornerLast->points[closestPointInd].x,
                                                          laserCloudCornerLast->points[closestPointInd].y,
                                                          laserCloudCornerLast->points[closestPointInd].z);
@@ -377,8 +369,10 @@ int main(int argc, char **argv)
                                 s = (cornerPointsSharp->points[i].intensity - int(cornerPointsSharp->points[i].intensity)) / SCAN_PERIOD;
                             else
                                 s = 1.0;
+
                             ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s);
                             problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
+
                             corner_correspondence++;
                         }
                     }
@@ -405,12 +399,9 @@ int main(int argc, char **argv)
                                 if (int(laserCloudSurfLast->points[j].intensity) > (closestPointScanID + NEARBY_SCAN))
                                     break;
 
-                                double pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) *
-                                                        (laserCloudSurfLast->points[j].x - pointSel.x) +
-                                                    (laserCloudSurfLast->points[j].y - pointSel.y) *
-                                                        (laserCloudSurfLast->points[j].y - pointSel.y) +
-                                                    (laserCloudSurfLast->points[j].z - pointSel.z) *
-                                                        (laserCloudSurfLast->points[j].z - pointSel.z);
+                                double pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) * (laserCloudSurfLast->points[j].x - pointSel.x) +
+                                                    (laserCloudSurfLast->points[j].y - pointSel.y) * (laserCloudSurfLast->points[j].y - pointSel.y) +
+                                                    (laserCloudSurfLast->points[j].z - pointSel.z) * (laserCloudSurfLast->points[j].z - pointSel.z);
 
                                 // if in the same or lower scan line
                                 if (int(laserCloudSurfLast->points[j].intensity) <= closestPointScanID && pointSqDis < minPointSqDis2)
@@ -433,12 +424,9 @@ int main(int argc, char **argv)
                                 if (int(laserCloudSurfLast->points[j].intensity) < (closestPointScanID - NEARBY_SCAN))
                                     break;
 
-                                double pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) *
-                                                        (laserCloudSurfLast->points[j].x - pointSel.x) +
-                                                    (laserCloudSurfLast->points[j].y - pointSel.y) *
-                                                        (laserCloudSurfLast->points[j].y - pointSel.y) +
-                                                    (laserCloudSurfLast->points[j].z - pointSel.z) *
-                                                        (laserCloudSurfLast->points[j].z - pointSel.z);
+                                double pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) * (laserCloudSurfLast->points[j].x - pointSel.x) +
+                                                    (laserCloudSurfLast->points[j].y - pointSel.y) * (laserCloudSurfLast->points[j].y - pointSel.y) +
+                                                    (laserCloudSurfLast->points[j].z - pointSel.z) * (laserCloudSurfLast->points[j].z - pointSel.z);
 
                                 // if in the same or higher scan line
                                 if (int(laserCloudSurfLast->points[j].intensity) >= closestPointScanID && pointSqDis < minPointSqDis2)
@@ -457,9 +445,7 @@ int main(int argc, char **argv)
                             if (minPointInd2 >= 0 && minPointInd3 >= 0)
                             {
 
-                                Eigen::Vector3d curr_point(surfPointsFlat->points[i].x,
-                                                            surfPointsFlat->points[i].y,
-                                                            surfPointsFlat->points[i].z);
+                                Eigen::Vector3d curr_point(surfPointsFlat->points[i].x, surfPointsFlat->points[i].y, surfPointsFlat->points[i].z);
                                 Eigen::Vector3d last_point_a(laserCloudSurfLast->points[closestPointInd].x,
                                                                 laserCloudSurfLast->points[closestPointInd].y,
                                                                 laserCloudSurfLast->points[closestPointInd].z);
@@ -475,8 +461,10 @@ int main(int argc, char **argv)
                                     s = (surfPointsFlat->points[i].intensity - int(surfPointsFlat->points[i].intensity)) / SCAN_PERIOD;
                                 else
                                     s = 1.0;
+                                
                                 ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s);
                                 problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
+
                                 plane_correspondence++;
                             }
                         }
