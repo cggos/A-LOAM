@@ -53,7 +53,11 @@ struct LidarEdgeFactor {
 };
 
 struct LidarPlaneFactor {
-  LidarPlaneFactor(Eigen::Vector3d curr_point_, Eigen::Vector3d last_point_j_, Eigen::Vector3d last_point_l_, Eigen::Vector3d last_point_m_, double s_)
+  LidarPlaneFactor(Eigen::Vector3d curr_point_,
+                   Eigen::Vector3d last_point_j_,
+                   Eigen::Vector3d last_point_l_,
+                   Eigen::Vector3d last_point_m_,
+                   double s_)
       : curr_point(curr_point_), last_point_j(last_point_j_), last_point_l(last_point_l_), last_point_m(last_point_m_), s(s_) {
     ljm_norm = (last_point_j - last_point_l).cross(last_point_j - last_point_m);
     ljm_norm.normalize();
@@ -83,9 +87,13 @@ struct LidarPlaneFactor {
     return true;
   }
 
-  static ceres::CostFunction *Create(
-	  const Eigen::Vector3d curr_point_, const Eigen::Vector3d last_point_j_, const Eigen::Vector3d last_point_l_, const Eigen::Vector3d last_point_m_, const double s_) {
-    return (new ceres::AutoDiffCostFunction<LidarPlaneFactor, 1, 4, 3>(new LidarPlaneFactor(curr_point_, last_point_j_, last_point_l_, last_point_m_, s_)));
+  static ceres::CostFunction *Create(const Eigen::Vector3d curr_point_,
+                                     const Eigen::Vector3d last_point_j_,
+                                     const Eigen::Vector3d last_point_l_,
+                                     const Eigen::Vector3d last_point_m_,
+                                     const double s_) {
+    return (new ceres::AutoDiffCostFunction<LidarPlaneFactor, 1, 4, 3>(
+        new LidarPlaneFactor(curr_point_, last_point_j_, last_point_l_, last_point_m_, s_)));
   }
 
   Eigen::Vector3d curr_point, last_point_j, last_point_l, last_point_m;
@@ -141,8 +149,7 @@ struct LidarDistanceFactor {
   }
 
   static ceres::CostFunction *Create(const Eigen::Vector3d curr_point_, const Eigen::Vector3d closed_point_) {
-    return (new ceres::AutoDiffCostFunction<LidarDistanceFactor, 3, 4, 3>(
-        new LidarDistanceFactor(curr_point_, closed_point_)));
+    return (new ceres::AutoDiffCostFunction<LidarDistanceFactor, 3, 4, 3>(new LidarDistanceFactor(curr_point_, closed_point_)));
   }
 
   Eigen::Vector3d curr_point;
