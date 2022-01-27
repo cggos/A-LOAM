@@ -287,6 +287,8 @@ int main(int argc, char **argv) {
             TransformToStart(&(cornerPointsSharp->points[i]), &pointSel);
             kdtreeCornerLast->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);
 
+            // 处理当前点云中的曲率最大的特征点,从上个点云中曲率比较大的特征点中找两个最近距离点，
+            // 一个点使用kd-tree查找，另一个根据找到的点在其相邻线找另外一个最近距离的点
             int closestPointInd = -1, minPointInd2 = -1;
             if (pointSearchSqDis[0] < DISTANCE_SQ_THRESHOLD) {
               closestPointInd = pointSearchInd[0];
@@ -365,6 +367,8 @@ int main(int argc, char **argv) {
             TransformToStart(&(surfPointsFlat->points[i]), &pointSel);
             kdtreeSurfLast->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);
 
+            // 对本次接收到的曲率最小的点,从上次接收到的点云曲率比较小的点中找三点组成平面，
+            // 一个使用kd-tree查找，另外一个在同一线上查找满足要求的，第三个在不同线上查找满足要求的
             int closestPointInd = -1, minPointInd2 = -1, minPointInd3 = -1;
             if (pointSearchSqDis[0] < DISTANCE_SQ_THRESHOLD) {
               closestPointInd = pointSearchInd[0];
@@ -510,10 +514,12 @@ int main(int argc, char **argv) {
       }
 #endif
 
+      // 将 cornerPointsLessSharp 与 laserCloudCornerLast 交换,目的保存 cornerPointsLessSharp 的值下轮使用
       pcl::PointCloud<PointType>::Ptr laserCloudTemp = cornerPointsLessSharp;
       cornerPointsLessSharp = laserCloudCornerLast;
       laserCloudCornerLast = laserCloudTemp;
 
+      //将 surfPointLessFlat 与 laserCloudSurfLast 交换，目的保存 surfPointsLessFlat 的值下轮使用
       laserCloudTemp = surfPointsLessFlat;
       surfPointsLessFlat = laserCloudSurfLast;
       laserCloudSurfLast = laserCloudTemp;
@@ -524,6 +530,7 @@ int main(int argc, char **argv) {
       // std::cout << "the size of corner last is " << laserCloudCornerLastNum << ", and the size of surf last is " <<
       // laserCloudSurfLastNum << '\n';
 
+      // 使用上一帧的特征点构建kd-tree
       kdtreeCornerLast->setInputCloud(laserCloudCornerLast);
       kdtreeSurfLast->setInputCloud(laserCloudSurfLast);
 
