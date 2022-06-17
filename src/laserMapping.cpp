@@ -134,17 +134,43 @@ ros::Publisher pubOdomAftMapped, pubOdomAftMappedHighFrec, pubLaserAfterMappedPa
 
 nav_msgs::Path laserAfterMappedPath;
 
+/*
+本函数内坐标系有三个
+1.雷达坐标系，雷达扫描时，某点会有一个位置point_curr
+2.里程计坐标系，雷达相对于里程计有一个四元数和位移矫正 q_wodom_curr+t_wodom_curr
+3.世界坐标系，里程计坐标系相对世界坐标系有一个四元数和位移矫正 q_wmap_wodom+t_wmap_wodom
+
+雷达坐标系到世界坐标系有一个四元数和位移矫正 q_w_curr+t_w_curr
+
+某点在世界坐标系下位置 point_w
+*/
+
 // set initial guess
+
+/**
+ * @brief 求世界坐标系下某个点的四元数和位移
+ * 
+ */
 void transformAssociateToMap() {
   q_w_curr = q_wmap_wodom * q_wodom_curr;
   t_w_curr = q_wmap_wodom * t_wodom_curr + t_wmap_wodom;
 }
 
+/**
+ * @brief 求世界坐标系下当前里程计坐标系的四元数与位移
+ * 
+ */
 void transformUpdate() {
   q_wmap_wodom = q_w_curr * q_wodom_curr.inverse();
   t_wmap_wodom = t_w_curr - q_wmap_wodom * t_wodom_curr;
 }
 
+/**
+ * @brief 求某点世界坐标系下的位置
+ * 
+ * @param pi 
+ * @param po 
+ */
 void pointAssociateToMap(PointType const *const pi, PointType *const po) {
   Eigen::Vector3d point_curr(pi->x, pi->y, pi->z);
   Eigen::Vector3d point_w = q_w_curr * point_curr + t_w_curr;
@@ -155,6 +181,12 @@ void pointAssociateToMap(PointType const *const pi, PointType *const po) {
   // po->intensity = 1.0;
 }
 
+/**
+ * @brief 求雷达坐标系下的某点位置
+ * 
+ * @param pi 
+ * @param po 
+ */
 void pointAssociateTobeMapped(PointType const *const pi, PointType *const po) {
   Eigen::Vector3d point_w(pi->x, pi->y, pi->z);
   Eigen::Vector3d point_curr = q_w_curr.inverse() * (point_w - t_w_curr);
@@ -292,11 +324,14 @@ void process() {
       // 立方体中点在世界坐标系下的（原点）位置
       // 过半取一（以50米进行四舍五入的效果），由于数组下标只能为正数，而地图可能建立在原点前后，因此
       // 每一维偏移一个laserCloudCenWidth（该值会动态调整，以使得数组利用最大化，初始值为该维数组长度1/2）的量
+      // 由于数组下标只能为正
+			// 将当前激光雷达（视角）的位置作为中心点，添加一个laserCloudCenWidth的偏执使center为正      
       int centerCubeI = int((t_w_curr.x() + 25.0) / 50.0) + laserCloudCenWidth;
       int centerCubeJ = int((t_w_curr.y() + 25.0) / 50.0) + laserCloudCenHeight;
       int centerCubeK = int((t_w_curr.z() + 25.0) / 50.0) + laserCloudCenDepth;
 
       // 由于计算机求余是向零取整，为了不使（-50.0,50.0）求余后都向零偏移，当被求余数为负数时求余结果统一向左偏移一个单位，也即减一
+      // 由于int始终向0取整，所以t_w小于-25时，要修正其取整方向，使得所有取整方向一致
       if (t_w_curr.x() + 25.0 < 0) centerCubeI--;
       if (t_w_curr.y() + 25.0 < 0) centerCubeJ--;
       if (t_w_curr.z() + 25.0 < 0) centerCubeK--;
@@ -521,8 +556,10 @@ void process() {
             pointOri = laserCloudCornerStack->points[i];
             // double sqrtDis = pointOri.x * pointOri.x + pointOri.y * pointOri.y + pointOri.z * pointOri.z;
             pointAssociateToMap(&pointOri, &pointSel);
+            // 寻找最近的五个点
             kdtreeCornerFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
 
+            // 如果五个点中最远的那个还小于1米，则求解协方差矩阵
             if (pointSearchSqDis[4] < 1.0) {
               std::vector<Eigen::Vector3d> nearCorners;
               Eigen::Vector3d center(0, 0, 0);
@@ -535,6 +572,7 @@ void process() {
               }
               center = center / 5.0;
 
+              // 根据协方差矩阵的特征值判定是否真的为角特征
               Eigen::Matrix3d covMat = Eigen::Matrix3d::Zero();
               for (int j = 0; j < 5; j++) {
                 Eigen::Matrix<double, 3, 1> tmpZeroMean = nearCorners[j] - center;
@@ -577,6 +615,7 @@ void process() {
             */
           }
 
+          // 根据法线判断是否为面特征
           int surf_num = 0;
           for (int i = 0; i < laserCloudSurfStackNum; i++) {
             pointOri = laserCloudSurfStack->points[i];
@@ -660,6 +699,7 @@ void process() {
       } else {
         ROS_WARN("time Map corner and surf num are not enough");
       }
+      // 迭代结束更新相关的转移矩阵
       transformUpdate();
 
       TicToc t_add;
