@@ -69,9 +69,12 @@ double timeLaserCloudSurfLast = 0;
 double timeLaserCloudFullRes = 0;
 double timeLaserOdometry = 0;
 
+// 初始时，Map坐标原点位于大地图的中点
+// Map系原点的cube坐标，这个坐标会随着大地图的移动而变化
 int laserCloudCenWidth = 10;
 int laserCloudCenHeight = 10;
 int laserCloudCenDepth = 5;
+
 const int laserCloudWidth = 21;
 const int laserCloudHeight = 21;
 const int laserCloudDepth = 11;
@@ -148,7 +151,7 @@ nav_msgs::Path laserAfterMappedPath;
 // set initial guess
 
 /**
- * @brief 求世界坐标系下某个点的四元数和位移
+ * @brief 求世界坐标系下某个点的四元数和位移，T_w_curr = T_w_last * T_last_curr(from lidar odom)
  * 
  */
 void transformAssociateToMap() {
@@ -166,7 +169,7 @@ void transformUpdate() {
 }
 
 /**
- * @brief 求某点世界坐标系下的位置
+ * @brief 求某点世界坐标系下的位置，雷达坐标系点转化为地图点
  * 
  * @param pi 
  * @param po 
@@ -182,7 +185,7 @@ void pointAssociateToMap(PointType const *const pi, PointType *const po) {
 }
 
 /**
- * @brief 求雷达坐标系下的某点位置
+ * @brief 求雷达坐标系下的某点位置，地图点转化到雷达坐标系点
  * 
  * @param pi 
  * @param po 
@@ -623,6 +626,7 @@ void process() {
             pointAssociateToMap(&pointOri, &pointSel);
             kdtreeSurfFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
 
+            // 假设平面不通过原点，则平面的一般方程为Ax + By + Cz + 1 = 0，用这个假设可以少算一个参数
             Eigen::Matrix<double, 5, 3> matA0;
             Eigen::Matrix<double, 5, 1> matB0 = -1 * Eigen::Matrix<double, 5, 1>::Ones();
             if (pointSearchSqDis[4] < 1.0) {
